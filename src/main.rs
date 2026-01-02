@@ -39,6 +39,9 @@ async fn main() -> anyhow::Result<()> {
         Commands::Remove { name } => {
             commands::remove_server(&store, name, cli.format)?;
         }
+        Commands::Ping { name } => {
+            commands::ping_server(&store, &name, cli.format).await?;
+        }
         _ => {
             println!("Command not yet implemented");
         }
