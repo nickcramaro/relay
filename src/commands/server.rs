@@ -79,7 +79,7 @@ pub fn list_servers(store: &ConfigStore, format: OutputFormat) -> Result<()> {
                 let name_display = if is_default {
                     format!("{} {}", name.cyan(), "(default)".dimmed())
                 } else {
-                    name.to_string()
+                    name.cyan().to_string()
                 };
                 println!("{:<20} {:<10} {}", name_display, transport.yellow(), target);
             }
