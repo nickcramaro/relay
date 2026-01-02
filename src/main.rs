@@ -1,25 +1,43 @@
 mod cli;
+mod commands;
 mod config;
 
 use clap::Parser;
-use cli::Cli;
+use cli::{Cli, Commands};
+use config::ConfigStore;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    // Initialize tracing
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::from_default_env().add_directive(if cli.verbose {
-                tracing::Level::DEBUG.into()
-            } else {
-                tracing::Level::INFO.into()
-            }),
+            tracing_subscriber::EnvFilter::from_default_env()
+                .add_directive(if cli.verbose {
+                    tracing::Level::DEBUG.into()
+                } else {
+                    tracing::Level::INFO.into()
+                }),
         )
         .init();
 
+    // Support RELAY_CONFIG env var for testing
+    let store = if let Ok(path) = std::env::var("RELAY_CONFIG") {
+        ConfigStore::with_path(path.into())
+    } else {
+        ConfigStore::new()?
+    };
+
     match cli.command {
+        Commands::Add { name, transport, cmd, url, env } => {
+            commands::add_server(&store, name, transport, cmd, url, env, cli.format)?;
+        }
+        Commands::List => {
+            commands::list_servers(&store, cli.format)?;
+        }
+        Commands::Remove { name } => {
+            commands::remove_server(&store, name, cli.format)?;
+        }
         _ => {
             println!("Command not yet implemented");
         }
