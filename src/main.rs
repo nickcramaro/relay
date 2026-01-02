@@ -49,8 +49,8 @@ async fn main() -> anyhow::Result<()> {
         Commands::Describe { server, tool } => {
             commands::describe_tool(&store, server, &tool, cli.format).await?;
         }
-        _ => {
-            println!("Command not yet implemented");
+        Commands::Run { server, tool, input_json, args } => {
+            commands::run_tool(&store, server, &tool, input_json, args, cli.format).await?;
         }
     }
 
