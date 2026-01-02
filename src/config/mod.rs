@@ -1,6 +1,8 @@
+mod interpolate;
 mod store;
 mod types;
 
+pub use interpolate::*;
 pub use store::*;
 pub use types::*;
 
