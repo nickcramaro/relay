@@ -1,15 +1,17 @@
 mod cli;
 mod commands;
 mod config;
+mod error;
 mod mcp;
 mod schema;
 
 use clap::Parser;
 use cli::{Cli, Commands};
 use config::ConfigStore;
+use owo_colors::OwoColorize;
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() {
     let cli = Cli::parse();
 
     tracing_subscriber::fmt()
@@ -23,6 +25,17 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
 
+    if let Err(err) = run(cli.verbose, cli.format, cli.command).await {
+        print_error(&err, cli.verbose);
+        std::process::exit(1);
+    }
+}
+
+async fn run(
+    _verbose: bool,
+    format: cli::OutputFormat,
+    command: Commands,
+) -> anyhow::Result<()> {
     // Support RELAY_CONFIG env var for testing
     let store = if let Ok(path) = std::env::var("RELAY_CONFIG") {
         ConfigStore::with_path(path.into())
@@ -30,29 +43,41 @@ async fn main() -> anyhow::Result<()> {
         ConfigStore::new()?
     };
 
-    match cli.command {
+    match command {
         Commands::Add { name, transport, cmd, url, env } => {
-            commands::add_server(&store, name, transport, cmd, url, env, cli.format)?;
+            commands::add_server(&store, name, transport, cmd, url, env, format)?;
         }
         Commands::List => {
-            commands::list_servers(&store, cli.format)?;
+            commands::list_servers(&store, format)?;
         }
         Commands::Remove { name } => {
-            commands::remove_server(&store, name, cli.format)?;
+            commands::remove_server(&store, name, format)?;
         }
         Commands::Ping { name } => {
-            commands::ping_server(&store, &name, cli.format).await?;
+            commands::ping_server(&store, &name, format).await?;
         }
         Commands::Tools { server } => {
-            commands::list_tools(&store, server, cli.format).await?;
+            commands::list_tools(&store, server, format).await?;
         }
         Commands::Describe { server, tool } => {
-            commands::describe_tool(&store, server, &tool, cli.format).await?;
+            commands::describe_tool(&store, server, &tool, format).await?;
         }
         Commands::Run { server, tool, input_json, args } => {
-            commands::run_tool(&store, server, &tool, input_json, args, cli.format).await?;
+            commands::run_tool(&store, server, &tool, input_json, args, format).await?;
         }
     }
 
     Ok(())
+}
+
+fn print_error(err: &anyhow::Error, verbose: bool) {
+    eprintln!("{} {}", "error:".red().bold(), err);
+
+    if verbose {
+        let mut source = err.source();
+        while let Some(cause) = source {
+            eprintln!("  {} {}", "caused by:".yellow(), cause);
+            source = cause.source();
+        }
+    }
 }
