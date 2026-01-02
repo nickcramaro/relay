@@ -61,17 +61,19 @@ pub enum Commands {
     },
     /// Describe a specific tool
     Describe {
-        /// Server name (uses default if not specified)
-        server: Option<String>,
         /// Tool name
         tool: String,
+        /// Server name (uses default if not specified)
+        #[arg(long, short)]
+        server: Option<String>,
     },
     /// Run a tool
     Run {
-        /// Server name (uses default if not specified)
-        server: Option<String>,
         /// Tool name
         tool: String,
+        /// Server name (uses default if not specified)
+        #[arg(long, short)]
+        server: Option<String>,
         /// JSON input for the tool
         #[arg(long)]
         input_json: Option<String>,
