@@ -42,6 +42,12 @@ async fn main() -> anyhow::Result<()> {
         Commands::Ping { name } => {
             commands::ping_server(&store, &name, cli.format).await?;
         }
+        Commands::Tools { server } => {
+            commands::list_tools(&store, server, cli.format).await?;
+        }
+        Commands::Describe { server, tool } => {
+            commands::describe_tool(&store, server, &tool, cli.format).await?;
+        }
         _ => {
             println!("Command not yet implemented");
         }
