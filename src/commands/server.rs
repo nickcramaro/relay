@@ -30,6 +30,9 @@ pub fn add_server(
         env: env.into_iter().collect(),
     };
 
+    if config.servers.contains_key(&name) {
+        bail!("Server '{}' already exists", name);
+    }
     config.servers.insert(name.clone(), server_config);
 
     // Set as default if it's the first server
