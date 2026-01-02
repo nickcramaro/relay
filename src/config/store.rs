@@ -12,7 +12,8 @@ impl ConfigStore {
         let dirs = ProjectDirs::from("", "", "relay")
             .context("Could not determine config directory")?;
         let config_dir = dirs.config_dir();
-        std::fs::create_dir_all(config_dir)?;
+        std::fs::create_dir_all(config_dir)
+            .with_context(|| format!("Failed to create config directory: {:?}", config_dir))?;
         Ok(Self {
             path: config_dir.join("config.yaml"),
         })
@@ -35,9 +36,11 @@ impl ConfigStore {
 
     pub fn save(&self, config: &Config) -> Result<()> {
         if let Some(parent) = self.path.parent() {
-            std::fs::create_dir_all(parent)?;
+            std::fs::create_dir_all(parent)
+                .with_context(|| format!("Failed to create parent directory: {:?}", parent))?;
         }
-        let contents = serde_yaml::to_string(config)?;
+        let contents = serde_yaml::to_string(config)
+            .context("Failed to serialize config to YAML")?;
         std::fs::write(&self.path, contents)
             .with_context(|| format!("Failed to write config to {:?}", self.path))?;
         Ok(())
