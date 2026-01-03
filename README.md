@@ -4,8 +4,19 @@ CLI interface for MCP (Model Context Protocol) servers.
 
 ## Installation
 
+### Quick Install
+
 ```bash
-cargo install --path .
+curl -fsSL https://raw.githubusercontent.com/nickcramaro/relay/main/install.sh | sh
+```
+
+### Build from Source
+
+```bash
+git clone https://github.com/nickcramaro/relay.git
+cd relay
+cargo build --release
+cp target/release/relay /usr/local/bin/
 ```
 
 ## Quick Start
