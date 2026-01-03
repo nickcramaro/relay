@@ -46,9 +46,6 @@ impl ConfigStore {
         Ok(())
     }
 
-    pub fn path(&self) -> &PathBuf {
-        &self.path
-    }
 }
 
 #[cfg(test)]

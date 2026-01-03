@@ -60,6 +60,7 @@ pub struct JsonRpcResponse {
     pub error: Option<JsonRpcError>,
 }
 
+#[allow(dead_code)]
 impl JsonRpcResponse {
     pub fn is_success(&self) -> bool {
         self.result.is_some() && self.error.is_none()

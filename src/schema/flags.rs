@@ -6,6 +6,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct SchemaFlag {
     pub name: String,
+    #[allow(dead_code)]
     pub description: String,
     pub required: bool,
     pub flag_type: FlagType,

@@ -25,7 +25,7 @@ textwrap = "0.16"
 
 [[bin]]
 name = "mock-server"
-path = "tests/mock_server.rs"
+path = "src/bin/mock_server.rs"
 
 [dev-dependencies]
 assert_cmd = "2"
