@@ -45,7 +45,6 @@ impl ConfigStore {
             .with_context(|| format!("Failed to write config to {:?}", self.path))?;
         Ok(())
     }
-
 }
 
 #[cfg(test)]
