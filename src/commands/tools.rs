@@ -39,10 +39,7 @@ pub async fn list_tools(
                 println!();
             }
 
-            println!(
-                "{}",
-                format!("Total: {} tool(s)", tools.len()).dimmed()
-            );
+            println!("{}", format!("Total: {} tool(s)", tools.len()).dimmed());
         }
         OutputFormat::Json => {
             let output = serde_json::json!({
@@ -69,10 +66,9 @@ pub async fn describe_tool(
     let tools = client.list_tools().await?;
     client.close().await?;
 
-    let tool = tools
-        .iter()
-        .find(|t| t.name == tool_name)
-        .ok_or_else(|| anyhow::anyhow!("Tool '{}' not found on server '{}'", tool_name, server_name))?;
+    let tool = tools.iter().find(|t| t.name == tool_name).ok_or_else(|| {
+        anyhow::anyhow!("Tool '{}' not found on server '{}'", tool_name, server_name)
+    })?;
 
     match format {
         OutputFormat::Human => {

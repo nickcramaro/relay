@@ -61,12 +61,10 @@ pub fn parse_schema(schema: &Value) -> Result<Vec<SchemaFlag>> {
         .collect();
 
     // Sort: required first, then alphabetically
-    flags.sort_by(|a, b| {
-        match (a.required, b.required) {
-            (true, false) => std::cmp::Ordering::Less,
-            (false, true) => std::cmp::Ordering::Greater,
-            _ => a.name.cmp(&b.name),
-        }
+    flags.sort_by(|a, b| match (a.required, b.required) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.name.cmp(&b.name),
     });
 
     Ok(flags)
@@ -314,16 +312,22 @@ mod tests {
         });
 
         let flags = parse_schema(&schema).unwrap();
-        assert_eq!(flags[0].flag_type, FlagType::Enum(vec![
-            "low".to_string(),
-            "medium".to_string(),
-            "high".to_string(),
-        ]));
+        assert_eq!(
+            flags[0].flag_type,
+            FlagType::Enum(vec![
+                "low".to_string(),
+                "medium".to_string(),
+                "high".to_string(),
+            ])
+        );
 
         // Valid enum value
         let args = vec!["--level".to_string(), "high".to_string()];
         let result = parse_args(&args, &flags).unwrap();
-        assert_eq!(result.get("level"), Some(&Value::String("high".to_string())));
+        assert_eq!(
+            result.get("level"),
+            Some(&Value::String("high".to_string()))
+        );
 
         // Invalid enum value
         let args = vec!["--level".to_string(), "invalid".to_string()];

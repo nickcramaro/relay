@@ -7,10 +7,9 @@ use anyhow::{Context, Result};
 pub fn resolve_server_name(config: &Config, server: Option<String>) -> Result<String> {
     match server {
         Some(name) => Ok(name),
-        None => config
-            .default_server
-            .clone()
-            .context("No server specified and no default server set. Use `relay add` to add a server."),
+        None => config.default_server.clone().context(
+            "No server specified and no default server set. Use `relay add` to add a server.",
+        ),
     }
 }
 
@@ -26,12 +25,8 @@ pub async fn connect(store: &ConfigStore, server_name: &str) -> Result<McpClient
     let env = interpolate_env_map(&server_config.env);
 
     let transport: Box<dyn Transport> = match &server_config.transport {
-        TransportConfig::Stdio { command } => {
-            Box::new(StdioTransport::spawn(command, env).await?)
-        }
-        TransportConfig::Http { url } => {
-            Box::new(HttpTransport::new(url.clone()))
-        }
+        TransportConfig::Stdio { command } => Box::new(StdioTransport::spawn(command, env).await?),
+        TransportConfig::Http { url } => Box::new(HttpTransport::new(url.clone())),
     };
 
     let mut client = McpClient::new(transport);

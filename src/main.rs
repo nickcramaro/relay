@@ -16,12 +16,11 @@ async fn main() {
 
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::from_default_env()
-                .add_directive(if cli.verbose {
-                    tracing::Level::DEBUG.into()
-                } else {
-                    tracing::Level::INFO.into()
-                }),
+            tracing_subscriber::EnvFilter::from_default_env().add_directive(if cli.verbose {
+                tracing::Level::DEBUG.into()
+            } else {
+                tracing::Level::INFO.into()
+            }),
         )
         .init();
 
@@ -31,11 +30,7 @@ async fn main() {
     }
 }
 
-async fn run(
-    _verbose: bool,
-    format: cli::OutputFormat,
-    command: Commands,
-) -> anyhow::Result<()> {
+async fn run(_verbose: bool, format: cli::OutputFormat, command: Commands) -> anyhow::Result<()> {
     // Support RELAY_CONFIG env var for testing
     let store = if let Ok(path) = std::env::var("RELAY_CONFIG") {
         ConfigStore::with_path(path.into())
@@ -44,7 +39,13 @@ async fn run(
     };
 
     match command {
-        Commands::Add { name, transport, cmd, url, env } => {
+        Commands::Add {
+            name,
+            transport,
+            cmd,
+            url,
+            env,
+        } => {
             commands::add_server(&store, name, transport, cmd, url, env, format)?;
         }
         Commands::List => {
@@ -62,7 +63,12 @@ async fn run(
         Commands::Describe { server, tool } => {
             commands::describe_tool(&store, server, &tool, format).await?;
         }
-        Commands::Run { server, tool, input_json, args } => {
+        Commands::Run {
+            server,
+            tool,
+            input_json,
+            args,
+        } => {
             commands::run_tool(&store, server, &tool, input_json, args, format).await?;
         }
     }

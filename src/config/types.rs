@@ -19,10 +19,6 @@ pub struct ServerConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "transport", rename_all = "lowercase")]
 pub enum TransportConfig {
-    Stdio {
-        command: String,
-    },
-    Http {
-        url: String,
-    },
+    Stdio { command: String },
+    Http { url: String },
 }

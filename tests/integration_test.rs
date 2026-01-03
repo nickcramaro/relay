@@ -27,9 +27,12 @@ fn test_full_workflow() {
     // Add mock server
     relay_cmd(config_str)
         .args([
-            "add", "mock",
-            "--transport", "stdio",
-            "--cmd", mock_server_path.to_str().unwrap(),
+            "add",
+            "mock",
+            "--transport",
+            "stdio",
+            "--cmd",
+            mock_server_path.to_str().unwrap(),
         ])
         .assert()
         .success();
@@ -64,21 +67,44 @@ fn test_full_workflow() {
 
     // Run tool with flags
     relay_cmd(config_str)
-        .args(["run", "echo", "--server", "mock", "--message", "Hello World"])
+        .args([
+            "run",
+            "echo",
+            "--server",
+            "mock",
+            "--message",
+            "Hello World",
+        ])
         .assert()
         .success()
         .stdout(predicate::str::contains("Echo: Hello World"));
 
     // Run tool with JSON input
     relay_cmd(config_str)
-        .args(["run", "echo", "--server", "mock", "--input-json", r#"{"message": "JSON test"}"#])
+        .args([
+            "run",
+            "echo",
+            "--server",
+            "mock",
+            "--input-json",
+            r#"{"message": "JSON test"}"#,
+        ])
         .assert()
         .success()
         .stdout(predicate::str::contains("Echo: JSON test"));
 
     // Run with --format json output
     relay_cmd(config_str)
-        .args(["--format", "json", "run", "echo", "--server", "mock", "--message", "Test"])
+        .args([
+            "--format",
+            "json",
+            "run",
+            "echo",
+            "--server",
+            "mock",
+            "--message",
+            "Test",
+        ])
         .assert()
         .success()
         .stdout(predicate::str::contains(r#""type": "text""#));

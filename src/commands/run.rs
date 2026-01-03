@@ -23,10 +23,9 @@ pub async fn run_tool(
 
     // Find the tool to get its schema
     let tools = client.list_tools().await?;
-    let tool = tools
-        .iter()
-        .find(|t| t.name == tool_name)
-        .ok_or_else(|| anyhow::anyhow!("Tool '{}' not found on server '{}'", tool_name, server_name))?;
+    let tool = tools.iter().find(|t| t.name == tool_name).ok_or_else(|| {
+        anyhow::anyhow!("Tool '{}' not found on server '{}'", tool_name, server_name)
+    })?;
 
     // Build arguments
     let arguments: HashMap<String, Value> = if let Some(json_str) = input_json {

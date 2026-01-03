@@ -16,7 +16,8 @@ pub fn add_server(
 
     let transport_config = match transport {
         Transport::Stdio => {
-            let command = cmd.ok_or_else(|| anyhow::anyhow!("--cmd required for stdio transport"))?;
+            let command =
+                cmd.ok_or_else(|| anyhow::anyhow!("--cmd required for stdio transport"))?;
             TransportConfig::Stdio { command }
         }
         Transport::Http => {
@@ -61,7 +62,10 @@ pub fn list_servers(store: &ConfigStore, format: OutputFormat) -> Result<()> {
     match format {
         OutputFormat::Human => {
             if config.servers.is_empty() {
-                println!("{}", "No servers registered. Use `relay add` to add one.".dimmed());
+                println!(
+                    "{}",
+                    "No servers registered. Use `relay add` to add one.".dimmed()
+                );
                 return Ok(());
             }
 

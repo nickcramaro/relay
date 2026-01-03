@@ -50,7 +50,9 @@ impl McpClient {
         }
 
         let result: InitializeResult = serde_json::from_value(
-            response.result.context("No result in initialize response")?,
+            response
+                .result
+                .context("No result in initialize response")?,
         )?;
 
         self.server_info = Some(result.server_info.clone());
@@ -73,7 +75,9 @@ impl McpClient {
             }
 
             let result: ToolsListResult = serde_json::from_value(
-                response.result.context("No result in tools/list response")?,
+                response
+                    .result
+                    .context("No result in tools/list response")?,
             )?;
 
             all_tools.extend(result.tools);
@@ -111,7 +115,9 @@ impl McpClient {
         }
 
         let result: ToolCallResult = serde_json::from_value(
-            response.result.context("No result in tools/call response")?,
+            response
+                .result
+                .context("No result in tools/call response")?,
         )?;
 
         Ok(result)

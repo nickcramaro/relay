@@ -165,13 +165,17 @@ pub struct ToolCallResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum ContentItem {
-    Text { text: String },
+    Text {
+        text: String,
+    },
     Image {
         data: String,
         #[serde(rename = "mimeType")]
         mime_type: String,
     },
-    Resource { resource: Value },
+    Resource {
+        resource: Value,
+    },
 }
 
 #[cfg(test)]

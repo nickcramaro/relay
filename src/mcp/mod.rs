@@ -1,6 +1,6 @@
-mod protocol;
 mod client;
+mod protocol;
 pub mod transport;
 
-pub use protocol::*;
 pub use client::McpClient;
+pub use protocol::*;

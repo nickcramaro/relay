@@ -9,8 +9,8 @@ pub struct ConfigStore {
 
 impl ConfigStore {
     pub fn new() -> Result<Self> {
-        let dirs = ProjectDirs::from("", "", "relay")
-            .context("Could not determine config directory")?;
+        let dirs =
+            ProjectDirs::from("", "", "relay").context("Could not determine config directory")?;
         let config_dir = dirs.config_dir();
         std::fs::create_dir_all(config_dir)
             .with_context(|| format!("Failed to create config directory: {:?}", config_dir))?;
@@ -29,8 +29,8 @@ impl ConfigStore {
         }
         let contents = std::fs::read_to_string(&self.path)
             .with_context(|| format!("Failed to read config from {:?}", self.path))?;
-        let config: Config = serde_yaml::from_str(&contents)
-            .with_context(|| "Failed to parse config YAML")?;
+        let config: Config =
+            serde_yaml::from_str(&contents).with_context(|| "Failed to parse config YAML")?;
         Ok(config)
     }
 
@@ -39,8 +39,8 @@ impl ConfigStore {
             std::fs::create_dir_all(parent)
                 .with_context(|| format!("Failed to create parent directory: {:?}", parent))?;
         }
-        let contents = serde_yaml::to_string(config)
-            .context("Failed to serialize config to YAML")?;
+        let contents =
+            serde_yaml::to_string(config).context("Failed to serialize config to YAML")?;
         std::fs::write(&self.path, contents)
             .with_context(|| format!("Failed to write config to {:?}", self.path))?;
         Ok(())

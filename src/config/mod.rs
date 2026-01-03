@@ -13,16 +13,20 @@ mod tests {
     #[test]
     fn test_config_roundtrip() {
         let config = Config {
-            servers: [
-                ("linear".to_string(), ServerConfig {
+            servers: [(
+                "linear".to_string(),
+                ServerConfig {
                     transport: TransportConfig::Stdio {
                         command: "npx @linear/mcp-server".to_string(),
                     },
-                    env: [("LINEAR_API_KEY".to_string(), "${env:LINEAR_API_KEY}".to_string())]
-                        .into_iter()
-                        .collect(),
-                }),
-            ]
+                    env: [(
+                        "LINEAR_API_KEY".to_string(),
+                        "${env:LINEAR_API_KEY}".to_string(),
+                    )]
+                    .into_iter()
+                    .collect(),
+                },
+            )]
             .into_iter()
             .collect(),
             default_server: Some("linear".to_string()),

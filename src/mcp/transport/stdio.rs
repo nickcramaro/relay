@@ -30,7 +30,9 @@ impl StdioTransport {
             .stderr(Stdio::inherit())
             .envs(env);
 
-        let mut child = cmd.spawn().with_context(|| format!("Failed to spawn: {}", command))?;
+        let mut child = cmd
+            .spawn()
+            .with_context(|| format!("Failed to spawn: {}", command))?;
 
         let stdin = child.stdin.take().context("Failed to get stdin")?;
         let stdout = child.stdout.take().context("Failed to get stdout")?;

@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-static ENV_REGEX: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"\$\{env:([^}]+)\}").unwrap()
-});
+static ENV_REGEX: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"\$\{env:([^}]+)\}").unwrap());
 
 /// Interpolate environment variables in a string.
 /// Supports ${env:VAR_NAME} syntax.
@@ -37,7 +36,10 @@ mod tests {
         std::env::set_var("TEST_VAR", "test_value");
 
         assert_eq!(interpolate_env("${env:TEST_VAR}"), "test_value");
-        assert_eq!(interpolate_env("prefix_${env:TEST_VAR}_suffix"), "prefix_test_value_suffix");
+        assert_eq!(
+            interpolate_env("prefix_${env:TEST_VAR}_suffix"),
+            "prefix_test_value_suffix"
+        );
         assert_eq!(interpolate_env("no_interpolation"), "no_interpolation");
         assert_eq!(interpolate_env("${env:NONEXISTENT}"), "${env:NONEXISTENT}");
 
@@ -51,7 +53,10 @@ mod tests {
 
         let mut input = HashMap::new();
         input.insert("key1".to_string(), "${env:MAP_TEST_VAR}".to_string());
-        input.insert("key2".to_string(), "prefix_${env:MAP_TEST_VAR2}_suffix".to_string());
+        input.insert(
+            "key2".to_string(),
+            "prefix_${env:MAP_TEST_VAR2}_suffix".to_string(),
+        );
         input.insert("key3".to_string(), "no_interpolation".to_string());
         input.insert("key4".to_string(), "${env:NONEXISTENT_MAP_VAR}".to_string());
 

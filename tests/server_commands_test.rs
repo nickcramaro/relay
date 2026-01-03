@@ -16,7 +16,14 @@ fn test_add_and_list_server() {
 
     // Add a server
     relay_cmd(config_str)
-        .args(["add", "test-server", "--transport", "http", "--url", "http://localhost:3000"])
+        .args([
+            "add",
+            "test-server",
+            "--transport",
+            "http",
+            "--url",
+            "http://localhost:3000",
+        ])
         .assert()
         .success()
         .stdout(predicate::str::contains("Added server"));
@@ -35,9 +42,7 @@ fn test_add_and_list_server() {
         .success();
 
     // Verify removed
-    relay_cmd(config_str)
-        .arg("list")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("No servers").or(predicate::str::contains("test-server").not()));
+    relay_cmd(config_str).arg("list").assert().success().stdout(
+        predicate::str::contains("No servers").or(predicate::str::contains("test-server").not()),
+    );
 }
