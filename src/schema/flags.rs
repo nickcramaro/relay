@@ -2,6 +2,39 @@ use anyhow::{anyhow, Result};
 use serde_json::Value;
 use std::collections::HashMap;
 
+/// Convert camelCase to kebab-case (e.g., "libraryName" -> "library-name")
+fn camel_to_kebab(s: &str) -> String {
+    let mut result = String::new();
+    for (i, c) in s.chars().enumerate() {
+        if c.is_uppercase() {
+            if i > 0 {
+                result.push('-');
+            }
+            result.push(c.to_ascii_lowercase());
+        } else {
+            result.push(c);
+        }
+    }
+    result
+}
+
+/// Convert kebab-case to camelCase (e.g., "library-name" -> "libraryName")
+fn kebab_to_camel(s: &str) -> String {
+    let mut result = String::new();
+    let mut capitalize_next = false;
+    for c in s.chars() {
+        if c == '-' {
+            capitalize_next = true;
+        } else if capitalize_next {
+            result.push(c.to_ascii_uppercase());
+            capitalize_next = false;
+        } else {
+            result.push(c);
+        }
+    }
+    result
+}
+
 /// Represents a CLI flag derived from a JSON Schema property
 #[derive(Debug, Clone)]
 pub struct SchemaFlag {
@@ -113,11 +146,13 @@ pub fn parse_args(args: &[String], flags: &[SchemaFlag]) -> Result<HashMap<Strin
 
         let flag_name = arg.trim_start_matches("--");
 
-        // Find matching flag (support underscore-to-hyphen matching)
+        // Find matching flag (support camelCase, underscore, and hyphen variations)
         let flag = flags.iter().find(|f| {
             f.name == flag_name
                 || f.name.replace('_', "-") == flag_name
                 || f.name == flag_name.replace('-', "_")
+                || camel_to_kebab(&f.name) == flag_name
+                || f.name == kebab_to_camel(flag_name)
         });
 
         if let Some(flag) = flag {
