@@ -2,7 +2,7 @@
 set -e
 
 REPO="nickcramaro/relay"
-INSTALL_DIR="/usr/local/bin"
+INSTALL_DIR="$HOME/.local/bin"
 BINARY_NAME="relay"
 
 # Detect OS
@@ -28,8 +28,10 @@ DOWNLOAD_URL="https://github.com/${REPO}/releases/latest/download/${ASSET_NAME}"
 echo "Installing relay..."
 echo "  OS: $OS"
 echo "  Arch: $ARCH"
-echo "  Binary: $ASSET_NAME"
 echo ""
+
+# Create install directory if needed
+mkdir -p "$INSTALL_DIR"
 
 # Create temp directory
 TMP_DIR="$(mktemp -d)"
@@ -46,17 +48,21 @@ else
     exit 1
 fi
 
-# Make executable
+# Make executable and install
 chmod +x "$TMP_DIR/$BINARY_NAME"
-
-# Install (may need sudo)
-echo "Installing to $INSTALL_DIR/$BINARY_NAME..."
-if [ -w "$INSTALL_DIR" ]; then
-    mv "$TMP_DIR/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
-else
-    sudo mv "$TMP_DIR/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
-fi
+mv "$TMP_DIR/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
 
 echo ""
-echo "Successfully installed relay!"
-echo "Run 'relay --help' to get started."
+echo "Successfully installed relay to $INSTALL_DIR/$BINARY_NAME"
+
+# Check if install dir is in PATH
+case ":$PATH:" in
+    *":$INSTALL_DIR:"*) ;;
+    *)
+        echo ""
+        echo "Note: $INSTALL_DIR is not in your PATH."
+        echo "Add it to your shell config:"
+        echo ""
+        echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+        ;;
+esac

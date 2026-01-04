@@ -4,8 +4,10 @@ use owo_colors::OwoColorize;
 use std::env;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf;
 
 const REPO: &str = "nickcramaro/relay";
+const INSTALL_PATH: &str = "/usr/local/bin/relay";
 
 pub async fn update(format: OutputFormat) -> Result<()> {
     let (os, arch) = detect_platform()?;
@@ -15,18 +17,41 @@ pub async fn update(format: OutputFormat) -> Result<()> {
         REPO, asset_name
     );
 
+    // Determine target path - prefer /usr/local/bin if it exists and is writable
+    let current_exe = env::current_exe().context("Failed to get current executable path")?;
+    let install_path = PathBuf::from(INSTALL_PATH);
+
+    let target_path = if install_path.exists() {
+        // Check if we can write to /usr/local/bin
+        if is_writable(&install_path) {
+            install_path
+        } else {
+            match format {
+                OutputFormat::Human => {
+                    eprintln!(
+                        "{} Cannot write to {}. Run with sudo or update the current binary.",
+                        "warning:".yellow(),
+                        INSTALL_PATH
+                    );
+                }
+                OutputFormat::Json => {}
+            }
+            current_exe.clone()
+        }
+    } else {
+        current_exe.clone()
+    };
+
     match format {
         OutputFormat::Human => {
             println!("Updating relay...");
             println!("  OS: {}", os);
             println!("  Arch: {}", arch);
+            println!("  Target: {}", target_path.display());
             println!();
         }
         OutputFormat::Json => {}
     }
-
-    // Get current executable path
-    let current_exe = env::current_exe().context("Failed to get current executable path")?;
 
     // Download new binary
     match format {
@@ -51,7 +76,7 @@ pub async fn update(format: OutputFormat) -> Result<()> {
         .context("Failed to read response body")?;
 
     // Write to temp file first
-    let temp_path = current_exe.with_extension("new");
+    let temp_path = target_path.with_extension("new");
     fs::write(&temp_path, &bytes).context("Failed to write temporary file")?;
 
     // Make executable
@@ -59,20 +84,39 @@ pub async fn update(format: OutputFormat) -> Result<()> {
     perms.set_mode(0o755);
     fs::set_permissions(&temp_path, perms)?;
 
-    // Replace current executable
-    fs::rename(&temp_path, &current_exe).context("Failed to replace executable")?;
+    // Replace target executable
+    fs::rename(&temp_path, &target_path).context("Failed to replace executable")?;
 
     match format {
         OutputFormat::Human => {
             println!();
-            println!("{}", "Successfully updated relay!".green().bold());
+            println!(
+                "{} Updated {}",
+                "✓".green(),
+                target_path.display().to_string().cyan()
+            );
         }
         OutputFormat::Json => {
-            println!(r#"{{"success": true}}"#);
+            println!(
+                r#"{{"success": true, "path": "{}"}}"#,
+                target_path.display()
+            );
         }
     }
 
     Ok(())
+}
+
+fn is_writable(path: &PathBuf) -> bool {
+    if let Some(parent) = path.parent() {
+        // Check if we can write to the directory
+        let test_path = parent.join(".relay_write_test");
+        if fs::write(&test_path, b"").is_ok() {
+            let _ = fs::remove_file(&test_path);
+            return true;
+        }
+    }
+    false
 }
 
 fn detect_platform() -> Result<(&'static str, &'static str)> {

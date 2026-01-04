@@ -16,7 +16,8 @@ curl -fsSL https://raw.githubusercontent.com/nickcramaro/relay/main/install.sh |
 git clone https://github.com/nickcramaro/relay.git
 cd relay
 cargo build --release
-cp target/release/relay /usr/local/bin/
+mkdir -p ~/.local/bin
+cp target/release/relay ~/.local/bin/
 ```
 
 ## Quick Start
