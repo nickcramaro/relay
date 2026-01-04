@@ -23,22 +23,20 @@ cp target/release/relay /usr/local/bin/
 
 ```bash
 # Add an MCP server
-relay add linear \
-  --transport stdio \
-  --cmd "npx @linear/mcp-server" \
-  --env LINEAR_API_KEY=your-key
+relay add context7 \
+  --transport http \
+  --url https://mcp.context7.com/mcp
 
 # List available tools
 relay tools
 
 # Describe a tool
-relay describe issue.create
+relay describe resolve-library-id
 
 # Run a tool
-relay run issue.create \
-  --title "Bug report" \
-  --team ENG \
-  --description "Found an issue"
+relay run resolve-library-id \
+  --query "how to parse JSON" \
+  --library-name "serde"
 ```
 
 ## Commands
@@ -59,13 +57,11 @@ Config stored at `~/.config/relay/config.yaml`:
 
 ```yaml
 servers:
-  linear:
-    transport: stdio
-    command: "npx @linear/mcp-server"
-    env:
-      LINEAR_API_KEY: "${env:LINEAR_API_KEY}"
+  context7:
+    transport: http
+    url: https://mcp.context7.com/mcp
 
-default_server: linear
+default_server: context7
 ```
 
 ## License
