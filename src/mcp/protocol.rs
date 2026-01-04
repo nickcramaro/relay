@@ -2,12 +2,88 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
-/// JSON-RPC 2.0 request ID (can be string or number per spec)
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(untagged)]
+/// JSON-RPC 2.0 request ID (can be string, number, or null per spec)
+#[derive(Debug, Clone, PartialEq)]
 pub enum RequestId {
     Number(u64),
     String(String),
+    Null,
+}
+
+impl serde::Serialize for RequestId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            RequestId::Number(n) => serializer.serialize_u64(*n),
+            RequestId::String(s) => serializer.serialize_str(s),
+            RequestId::Null => serializer.serialize_none(),
+        }
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for RequestId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::de::{self, Visitor};
+
+        struct RequestIdVisitor;
+
+        impl<'de> Visitor<'de> for RequestIdVisitor {
+            type Value = RequestId;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a string, number, or null")
+            }
+
+            fn visit_u64<E>(self, value: u64) -> Result<RequestId, E>
+            where
+                E: de::Error,
+            {
+                Ok(RequestId::Number(value))
+            }
+
+            fn visit_i64<E>(self, value: i64) -> Result<RequestId, E>
+            where
+                E: de::Error,
+            {
+                Ok(RequestId::Number(value as u64))
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<RequestId, E>
+            where
+                E: de::Error,
+            {
+                Ok(RequestId::String(value.to_string()))
+            }
+
+            fn visit_string<E>(self, value: String) -> Result<RequestId, E>
+            where
+                E: de::Error,
+            {
+                Ok(RequestId::String(value))
+            }
+
+            fn visit_unit<E>(self) -> Result<RequestId, E>
+            where
+                E: de::Error,
+            {
+                Ok(RequestId::Null)
+            }
+
+            fn visit_none<E>(self) -> Result<RequestId, E>
+            where
+                E: de::Error,
+            {
+                Ok(RequestId::Null)
+            }
+        }
+
+        deserializer.deserialize_any(RequestIdVisitor)
+    }
 }
 
 impl From<u64> for RequestId {

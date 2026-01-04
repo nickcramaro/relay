@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "CLI interface for MCP servers"
 license = "MIT"
+default-run = "relay"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

@@ -24,6 +24,7 @@ impl Transport for HttpTransport {
         let response = self
             .client
             .post(&self.url)
+            .header("Accept", "application/json, text/event-stream")
             .json(&req)
             .send()
             .await
