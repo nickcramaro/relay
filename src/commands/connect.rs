@@ -38,11 +38,13 @@ pub async fn connect(store: &ConfigStore, server_name: &str) -> Result<McpClient
             // Use SSE transport for URLs ending with /sse
             if url.ends_with("/sse") {
                 Box::new(
-                    SseTransport::new(url.clone(), server_name.to_string()).with_token(access_token),
+                    SseTransport::new(url.clone(), server_name.to_string())
+                        .with_token(access_token),
                 )
             } else {
                 Box::new(
-                    HttpTransport::new(url.clone(), server_name.to_string()).with_token(access_token),
+                    HttpTransport::new(url.clone(), server_name.to_string())
+                        .with_token(access_token),
                 )
             }
         }

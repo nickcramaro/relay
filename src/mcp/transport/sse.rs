@@ -46,14 +46,18 @@ impl SseTransport {
         }
 
         // Open SSE connection
-        let mut request = self.client.get(&self.base_url)
+        let mut request = self
+            .client
+            .get(&self.base_url)
             .header("Accept", "text/event-stream");
 
         if let Some(ref token) = self.access_token {
             request = request.header("Authorization", format!("Bearer {}", token));
         }
 
-        let response = request.send().await
+        let response = request
+            .send()
+            .await
             .with_context(|| format!("Failed to connect to SSE endpoint: {}", self.base_url))?;
 
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
@@ -64,10 +68,7 @@ impl SseTransport {
         }
 
         if !response.status().is_success() {
-            return Err(anyhow!(
-                "SSE connection failed: HTTP {}",
-                response.status()
-            ));
+            return Err(anyhow!("SSE connection failed: HTTP {}", response.status()));
         }
 
         // Create channel for responses
@@ -147,7 +148,9 @@ impl Transport for SseTransport {
         let message_url = self.ensure_connected().await?;
         let request_id = req.id.clone();
 
-        let mut request = self.client.post(&message_url)
+        let mut request = self
+            .client
+            .post(&message_url)
             .header("Content-Type", "application/json");
 
         if let Some(ref token) = self.access_token {
