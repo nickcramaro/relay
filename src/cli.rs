@@ -81,6 +81,8 @@ pub enum Commands {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
+    /// Update relay to the latest version
+    Update,
 }
 
 #[derive(Clone, Copy, clap::ValueEnum)]

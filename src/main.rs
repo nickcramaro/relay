@@ -70,6 +70,9 @@ async fn run(_verbose: bool, format: cli::OutputFormat, command: Commands) -> an
         } => {
             commands::run_tool(&store, server, &tool, input_json, args, format).await?;
         }
+        Commands::Update => {
+            commands::update(format).await?;
+        }
     }
 
     Ok(())

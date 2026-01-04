@@ -22,10 +22,14 @@ cp target/release/relay /usr/local/bin/
 ## Quick Start
 
 ```bash
-# Add an MCP server
+# Add MCP servers
 relay add context7 \
   --transport http \
   --url https://mcp.context7.com/mcp
+
+relay add linear \
+  --transport http \
+  --url https://mcp.linear.app/sse
 
 # List available tools
 relay tools
@@ -37,6 +41,9 @@ relay describe resolve-library-id
 relay run resolve-library-id \
   --query "how to parse JSON" \
   --library-name "serde"
+
+# Run Linear tools
+relay run --server linear list_issues --query "bugs"
 ```
 
 ## Commands
@@ -50,6 +57,7 @@ relay run resolve-library-id \
 | `relay tools [--server <name>]` | List available tools |
 | `relay describe <tool> [--server <name>]` | Show tool details |
 | `relay run <tool> [--server <name>] [args]` | Execute a tool |
+| `relay update` | Update to latest version |
 
 ## Configuration
 
