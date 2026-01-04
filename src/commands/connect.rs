@@ -1,5 +1,6 @@
+use crate::auth::AuthStore;
 use crate::config::{interpolate_env_map, Config, ConfigStore, TransportConfig};
-use crate::mcp::transport::{HttpTransport, StdioTransport, Transport};
+use crate::mcp::transport::{HttpTransport, SseTransport, StdioTransport, Transport};
 use crate::mcp::McpClient;
 use anyhow::{Context, Result};
 
@@ -24,9 +25,27 @@ pub async fn connect(store: &ConfigStore, server_name: &str) -> Result<McpClient
 
     let env = interpolate_env_map(&server_config.env);
 
+    // Load auth tokens
+    let auth_store = AuthStore::load().ok();
+    let access_token = auth_store
+        .as_ref()
+        .and_then(|s| s.get_token(server_name))
+        .map(|t| t.access_token.clone());
+
     let transport: Box<dyn Transport> = match &server_config.transport {
         TransportConfig::Stdio { command } => Box::new(StdioTransport::spawn(command, env).await?),
-        TransportConfig::Http { url } => Box::new(HttpTransport::new(url.clone())),
+        TransportConfig::Http { url } => {
+            // Use SSE transport for URLs ending with /sse
+            if url.ends_with("/sse") {
+                Box::new(
+                    SseTransport::new(url.clone(), server_name.to_string()).with_token(access_token),
+                )
+            } else {
+                Box::new(
+                    HttpTransport::new(url.clone(), server_name.to_string()).with_token(access_token),
+                )
+            }
+        }
     };
 
     let mut client = McpClient::new(transport);

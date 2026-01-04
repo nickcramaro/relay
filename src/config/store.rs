@@ -1,6 +1,5 @@
 use super::Config;
 use anyhow::{Context, Result};
-use directories::ProjectDirs;
 use std::path::PathBuf;
 
 pub struct ConfigStore {
@@ -9,10 +8,9 @@ pub struct ConfigStore {
 
 impl ConfigStore {
     pub fn new() -> Result<Self> {
-        let dirs =
-            ProjectDirs::from("", "", "relay").context("Could not determine config directory")?;
-        let config_dir = dirs.config_dir();
-        std::fs::create_dir_all(config_dir)
+        let home = std::env::var("HOME").context("HOME environment variable not set")?;
+        let config_dir = PathBuf::from(home).join(".config").join("relay");
+        std::fs::create_dir_all(&config_dir)
             .with_context(|| format!("Failed to create config directory: {:?}", config_dir))?;
         Ok(Self {
             path: config_dir.join("config.yaml"),

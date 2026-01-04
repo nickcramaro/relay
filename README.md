@@ -54,9 +54,11 @@ relay run --server linear list_issues --query "bugs"
 | `relay list` | List registered servers |
 | `relay remove <name>` | Remove a server |
 | `relay ping <name>` | Test server connectivity |
-| `relay tools [--server <name>]` | List available tools |
-| `relay describe <tool> [--server <name>]` | Show tool details |
-| `relay run <tool> [--server <name>] [args]` | Execute a tool |
+| `relay tools [server]` | List available tools |
+| `relay describe <tool> [-s server]` | Show tool details |
+| `relay run <tool> [-s server] [args]` | Execute a tool |
+| `relay auth <name>` | Authenticate with a server |
+| `relay logout <name>` | Remove authentication |
 | `relay update` | Update to latest version |
 
 ## Configuration

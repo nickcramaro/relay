@@ -83,6 +83,19 @@ pub enum Commands {
     },
     /// Update relay to the latest version
     Update,
+    /// Authenticate with an MCP server
+    Auth {
+        /// Server name
+        name: String,
+        /// Manually provide an access token
+        #[arg(long)]
+        token: Option<String>,
+    },
+    /// Remove authentication for a server
+    Logout {
+        /// Server name
+        name: String,
+    },
 }
 
 #[derive(Clone, Copy, clap::ValueEnum)]

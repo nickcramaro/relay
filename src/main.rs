@@ -1,3 +1,4 @@
+mod auth;
 mod cli;
 mod commands;
 mod config;
@@ -72,6 +73,12 @@ async fn run(_verbose: bool, format: cli::OutputFormat, command: Commands) -> an
         }
         Commands::Update => {
             commands::update(format).await?;
+        }
+        Commands::Auth { name, token } => {
+            commands::authenticate(&store, &name, token, format).await?;
+        }
+        Commands::Logout { name } => {
+            commands::logout(&name, format)?;
         }
     }
 
