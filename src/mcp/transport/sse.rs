@@ -52,7 +52,16 @@ impl SseTransport {
             .header("Accept", "text/event-stream");
 
         if let Some(ref token) = self.access_token {
-            request = request.header("Authorization", format!("Bearer {}", token));
+            // Support different auth formats: if token already has a prefix, use as-is
+            let auth_value = if token.starts_with("Bearer ")
+                || token.starts_with("token ")
+                || token.starts_with("Basic ")
+            {
+                token.clone()
+            } else {
+                format!("Bearer {}", token)
+            };
+            request = request.header("Authorization", auth_value);
         }
 
         let response = request
@@ -154,7 +163,16 @@ impl Transport for SseTransport {
             .header("Content-Type", "application/json");
 
         if let Some(ref token) = self.access_token {
-            request = request.header("Authorization", format!("Bearer {}", token));
+            // Support different auth formats: if token already has a prefix, use as-is
+            let auth_value = if token.starts_with("Bearer ")
+                || token.starts_with("token ")
+                || token.starts_with("Basic ")
+            {
+                token.clone()
+            } else {
+                format!("Bearer {}", token)
+            };
+            request = request.header("Authorization", auth_value);
         }
 
         let response = request

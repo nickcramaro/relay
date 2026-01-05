@@ -45,7 +45,16 @@ impl Transport for HttpTransport {
             .header("Accept", "application/json, text/event-stream");
 
         if let Some(token) = &self.access_token {
-            request = request.header("Authorization", format!("Bearer {}", token));
+            // Support different auth formats: if token already has a prefix, use as-is
+            let auth_value = if token.starts_with("Bearer ")
+                || token.starts_with("token ")
+                || token.starts_with("Basic ")
+            {
+                token.clone()
+            } else {
+                format!("Bearer {}", token)
+            };
+            request = request.header("Authorization", auth_value);
         }
 
         // Include session ID for Streamable HTTP transport
@@ -108,14 +117,13 @@ impl Transport for HttpTransport {
             .context("Failed to read response body")?;
 
         // Handle SSE-formatted responses (Streamable HTTP transport)
-        // These come back as "data: {...}\n\n" instead of plain JSON
-        let json_str = if body.starts_with("data: ") {
-            body.strip_prefix("data: ")
-                .unwrap()
-                .trim()
-        } else {
-            body.trim()
-        };
+        // These may come as "data: {...}" or "event: message\ndata: {...}"
+        let json_str = body
+            .lines()
+            .find(|line| line.starts_with("data: "))
+            .and_then(|line| line.strip_prefix("data: "))
+            .map(|s| s.trim())
+            .unwrap_or_else(|| body.trim());
 
         let response: JsonRpcResponse =
             serde_json::from_str(json_str).context("Failed to parse JSON-RPC response")?;
