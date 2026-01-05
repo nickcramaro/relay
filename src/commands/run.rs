@@ -72,6 +72,11 @@ pub async fn run_tool(
                     }
                 }
             }
+
+            // Print structured content if present (MCP extension)
+            if let Some(structured) = &result.structured_content {
+                println!("{}", serde_json::to_string_pretty(structured)?);
+            }
         }
         OutputFormat::Json => {
             println!("{}", serde_json::to_string_pretty(&result)?);

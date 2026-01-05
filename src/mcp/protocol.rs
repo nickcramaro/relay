@@ -237,6 +237,9 @@ pub struct ToolCallResult {
     pub content: Vec<ContentItem>,
     #[serde(default)]
     pub is_error: bool,
+    /// Structured content from MCP response (optional)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub structured_content: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
