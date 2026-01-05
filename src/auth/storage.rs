@@ -17,6 +17,9 @@ pub struct StoredToken {
 pub struct StoredClient {
     pub client_id: String,
     pub client_secret: Option<String>,
+    /// The redirect_uri used during registration (needed for subsequent auth flows)
+    #[serde(default)]
+    pub redirect_uri: Option<String>,
 }
 
 /// All auth data for servers
@@ -76,6 +79,10 @@ impl AuthStore {
 
     pub fn set_client(&mut self, auth_server: String, client: StoredClient) {
         self.clients.insert(auth_server, client);
+    }
+
+    pub fn remove_client(&mut self, auth_server: &str) {
+        self.clients.remove(auth_server);
     }
 
     #[allow(dead_code)]

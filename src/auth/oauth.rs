@@ -116,6 +116,22 @@ fn generate_state() -> String {
     format!("{:016x}", h.finish())
 }
 
+/// Extract port number from a redirect URI like "http://localhost:12345/callback"
+fn extract_port_from_uri(uri: &str) -> Option<u16> {
+    // Parse URI to extract port
+    if let Some(host_start) = uri.find("://") {
+        let rest = &uri[host_start + 3..];
+        if let Some(colon_pos) = rest.find(':') {
+            let after_colon = &rest[colon_pos + 1..];
+            // Find end of port (either '/' or end of string)
+            let port_end = after_colon.find('/').unwrap_or(after_colon.len());
+            let port_str = &after_colon[..port_end];
+            return port_str.parse().ok();
+        }
+    }
+    None
+}
+
 #[allow(dead_code)]
 pub struct OAuthFlow {
     client: Client,
@@ -236,6 +252,39 @@ impl OAuthFlow {
             .context("Failed to parse client registration response")
     }
 
+    /// Register a new OAuth client and return the listener, redirect_uri, and client
+    async fn register_new_client(
+        &self,
+        registration_endpoint: &Option<String>,
+        auth_server: &str,
+        auth_store: &mut AuthStore,
+    ) -> Result<(TcpListener, String, StoredClient)> {
+        let registration_endpoint = registration_endpoint
+            .as_ref()
+            .ok_or_else(|| anyhow!("No stored client and no registration endpoint available"))?;
+
+        // Start local callback server with random port
+        let listener =
+            TcpListener::bind("127.0.0.1:0").context("Failed to bind callback server")?;
+        let port = listener.local_addr()?.port();
+        let redirect_uri = format!("http://localhost:{}/callback", port);
+
+        println!("Registering client...");
+        let response = self
+            .register_client(registration_endpoint, &redirect_uri)
+            .await?;
+
+        let client = StoredClient {
+            client_id: response.client_id,
+            client_secret: response.client_secret,
+            redirect_uri: Some(redirect_uri.clone()),
+        };
+        auth_store.set_client(auth_server.to_string(), client.clone());
+        auth_store.save()?;
+
+        Ok((listener, redirect_uri, client))
+    }
+
     /// Exchange authorization code for tokens
     pub async fn exchange_code(
         &self,
@@ -347,33 +396,72 @@ impl OAuthFlow {
 
         let auth_metadata = self.fetch_auth_server_metadata(auth_server).await?;
 
-        // Start local callback server
-        let listener =
-            TcpListener::bind("127.0.0.1:0").context("Failed to bind callback server")?;
-        let port = listener.local_addr()?.port();
-        let redirect_uri = format!("http://localhost:{}/callback", port);
-
-        // Get or register client
+        // Get or register client (need to handle redirect_uri matching)
         let mut auth_store = AuthStore::load()?;
-        let client = if let Some(stored) = auth_store.get_client(auth_server) {
-            stored.clone()
-        } else if let Some(registration_endpoint) = &auth_metadata.registration_endpoint {
-            println!("Registering client...");
-            let response = self
-                .register_client(registration_endpoint, &redirect_uri)
-                .await?;
-            let client = StoredClient {
-                client_id: response.client_id,
-                client_secret: response.client_secret,
+
+        // Try to use stored client with its original redirect_uri
+        let (listener, redirect_uri, client) =
+            if let Some(stored) = auth_store.get_client(auth_server) {
+                if let Some(stored_uri) = &stored.redirect_uri {
+                    // Extract port from stored redirect_uri and try to bind to it
+                    if let Some(port) = extract_port_from_uri(stored_uri) {
+                        match TcpListener::bind(format!("127.0.0.1:{}", port)) {
+                            Ok(listener) => {
+                                // Successfully bound to the same port
+                                (listener, stored_uri.clone(), stored.clone())
+                            }
+                            Err(_) => {
+                                // Port in use - need to re-register with new redirect_uri
+                                println!(
+                                    "Previous callback port {} is in use, re-registering client...",
+                                    port
+                                );
+                                auth_store.remove_client(auth_server);
+                                let (listener, uri, client) = self
+                                    .register_new_client(
+                                        &auth_metadata.registration_endpoint,
+                                        auth_server,
+                                        &mut auth_store,
+                                    )
+                                    .await?;
+                                (listener, uri, client)
+                            }
+                        }
+                    } else {
+                        // Invalid stored redirect_uri - re-register
+                        auth_store.remove_client(auth_server);
+                        let (listener, uri, client) = self
+                            .register_new_client(
+                                &auth_metadata.registration_endpoint,
+                                auth_server,
+                                &mut auth_store,
+                            )
+                            .await?;
+                        (listener, uri, client)
+                    }
+                } else {
+                    // No stored redirect_uri (legacy client) - re-register
+                    auth_store.remove_client(auth_server);
+                    let (listener, uri, client) = self
+                        .register_new_client(
+                            &auth_metadata.registration_endpoint,
+                            auth_server,
+                            &mut auth_store,
+                        )
+                        .await?;
+                    (listener, uri, client)
+                }
+            } else {
+                // No stored client - register new one
+                let (listener, uri, client) = self
+                    .register_new_client(
+                        &auth_metadata.registration_endpoint,
+                        auth_server,
+                        &mut auth_store,
+                    )
+                    .await?;
+                (listener, uri, client)
             };
-            auth_store.set_client(auth_server.clone(), client.clone());
-            auth_store.save()?;
-            client
-        } else {
-            return Err(anyhow!(
-                "No stored client and no registration endpoint available"
-            ));
-        };
 
         // Generate PKCE
         let (code_verifier, code_challenge) = generate_pkce();
@@ -491,33 +579,72 @@ impl OAuthFlow {
         // Extract issuer as auth server identifier
         let auth_server = &auth_metadata.issuer;
 
-        // Start local callback server
-        let listener =
-            TcpListener::bind("127.0.0.1:0").context("Failed to bind callback server")?;
-        let port = listener.local_addr()?.port();
-        let redirect_uri = format!("http://localhost:{}/callback", port);
-
-        // Get or register client
+        // Get or register client (need to handle redirect_uri matching)
         let mut auth_store = AuthStore::load()?;
-        let client = if let Some(stored) = auth_store.get_client(auth_server) {
-            stored.clone()
-        } else if let Some(registration_endpoint) = &auth_metadata.registration_endpoint {
-            println!("Registering client...");
-            let response = self
-                .register_client(registration_endpoint, &redirect_uri)
-                .await?;
-            let client = StoredClient {
-                client_id: response.client_id,
-                client_secret: response.client_secret,
+
+        // Try to use stored client with its original redirect_uri
+        let (listener, redirect_uri, client) =
+            if let Some(stored) = auth_store.get_client(auth_server) {
+                if let Some(stored_uri) = &stored.redirect_uri {
+                    // Extract port from stored redirect_uri and try to bind to it
+                    if let Some(port) = extract_port_from_uri(stored_uri) {
+                        match TcpListener::bind(format!("127.0.0.1:{}", port)) {
+                            Ok(listener) => {
+                                // Successfully bound to the same port
+                                (listener, stored_uri.clone(), stored.clone())
+                            }
+                            Err(_) => {
+                                // Port in use - need to re-register with new redirect_uri
+                                println!(
+                                    "Previous callback port {} is in use, re-registering client...",
+                                    port
+                                );
+                                auth_store.remove_client(auth_server);
+                                let (listener, uri, client) = self
+                                    .register_new_client(
+                                        &auth_metadata.registration_endpoint,
+                                        auth_server,
+                                        &mut auth_store,
+                                    )
+                                    .await?;
+                                (listener, uri, client)
+                            }
+                        }
+                    } else {
+                        // Invalid stored redirect_uri - re-register
+                        auth_store.remove_client(auth_server);
+                        let (listener, uri, client) = self
+                            .register_new_client(
+                                &auth_metadata.registration_endpoint,
+                                auth_server,
+                                &mut auth_store,
+                            )
+                            .await?;
+                        (listener, uri, client)
+                    }
+                } else {
+                    // No stored redirect_uri (legacy client) - re-register
+                    auth_store.remove_client(auth_server);
+                    let (listener, uri, client) = self
+                        .register_new_client(
+                            &auth_metadata.registration_endpoint,
+                            auth_server,
+                            &mut auth_store,
+                        )
+                        .await?;
+                    (listener, uri, client)
+                }
+            } else {
+                // No stored client - register new one
+                let (listener, uri, client) = self
+                    .register_new_client(
+                        &auth_metadata.registration_endpoint,
+                        auth_server,
+                        &mut auth_store,
+                    )
+                    .await?;
+                (listener, uri, client)
             };
-            auth_store.set_client(auth_server.clone(), client.clone());
-            auth_store.save()?;
-            client
-        } else {
-            return Err(anyhow!(
-                "No stored client and no registration endpoint available"
-            ));
-        };
 
         // Generate PKCE
         let (code_verifier, code_challenge) = generate_pkce();
