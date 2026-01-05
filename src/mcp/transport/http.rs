@@ -16,6 +16,7 @@ pub struct HttpTransport {
     url: String,
     access_token: Option<String>,
     server_name: String,
+    session_id: Option<String>,
 }
 
 impl HttpTransport {
@@ -25,6 +26,7 @@ impl HttpTransport {
             url,
             access_token: None,
             server_name,
+            session_id: None,
         }
     }
 
@@ -46,11 +48,23 @@ impl Transport for HttpTransport {
             request = request.header("Authorization", format!("Bearer {}", token));
         }
 
+        // Include session ID for Streamable HTTP transport
+        if let Some(session_id) = &self.session_id {
+            request = request.header("Mcp-Session-Id", session_id);
+        }
+
         let response = request
             .json(&req)
             .send()
             .await
             .with_context(|| format!("Failed to send request to {}", self.url))?;
+
+        // Extract and store session ID from response headers
+        if let Some(session_id) = response.headers().get("mcp-session-id") {
+            if let Ok(id) = session_id.to_str() {
+                self.session_id = Some(id.to_string());
+            }
+        }
 
         // Check for authentication errors
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
@@ -87,10 +101,24 @@ impl Transport for HttpTransport {
             return Err(anyhow!("HTTP error {}: {}", status, body));
         }
 
-        let response: JsonRpcResponse = response
-            .json()
+        // Read response as text to handle both plain JSON and SSE format
+        let body = response
+            .text()
             .await
-            .context("Failed to parse JSON-RPC response")?;
+            .context("Failed to read response body")?;
+
+        // Handle SSE-formatted responses (Streamable HTTP transport)
+        // These come back as "data: {...}\n\n" instead of plain JSON
+        let json_str = if body.starts_with("data: ") {
+            body.strip_prefix("data: ")
+                .unwrap()
+                .trim()
+        } else {
+            body.trim()
+        };
+
+        let response: JsonRpcResponse =
+            serde_json::from_str(json_str).context("Failed to parse JSON-RPC response")?;
 
         Ok(response)
     }
