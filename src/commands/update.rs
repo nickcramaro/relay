@@ -7,7 +7,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
 const REPO: &str = "nickcramaro/relay";
-const INSTALL_PATH: &str = "/usr/local/bin/relay";
+const INSTALL_DIR: &str = ".local/bin";
 
 pub async fn update(format: OutputFormat) -> Result<()> {
     let (os, arch) = detect_platform()?;
@@ -17,27 +17,13 @@ pub async fn update(format: OutputFormat) -> Result<()> {
         REPO, asset_name
     );
 
-    // Determine target path - prefer /usr/local/bin if it exists and is writable
+    // Determine target path - prefer ~/.local/bin if it exists
     let current_exe = env::current_exe().context("Failed to get current executable path")?;
-    let install_path = PathBuf::from(INSTALL_PATH);
+    let home = env::var("HOME").context("HOME environment variable not set")?;
+    let install_path = PathBuf::from(&home).join(INSTALL_DIR).join("relay");
 
     let target_path = if install_path.exists() {
-        // Check if we can write to /usr/local/bin
-        if is_writable(&install_path) {
-            install_path
-        } else {
-            match format {
-                OutputFormat::Human => {
-                    eprintln!(
-                        "{} Cannot write to {}. Run with sudo or update the current binary.",
-                        "warning:".yellow(),
-                        INSTALL_PATH
-                    );
-                }
-                OutputFormat::Json => {}
-            }
-            current_exe.clone()
-        }
+        install_path
     } else {
         current_exe.clone()
     };
@@ -105,18 +91,6 @@ pub async fn update(format: OutputFormat) -> Result<()> {
     }
 
     Ok(())
-}
-
-fn is_writable(path: &PathBuf) -> bool {
-    if let Some(parent) = path.parent() {
-        // Check if we can write to the directory
-        let test_path = parent.join(".relay_write_test");
-        if fs::write(&test_path, b"").is_ok() {
-            let _ = fs::remove_file(&test_path);
-            return true;
-        }
-    }
-    false
 }
 
 fn detect_platform() -> Result<(&'static str, &'static str)> {
